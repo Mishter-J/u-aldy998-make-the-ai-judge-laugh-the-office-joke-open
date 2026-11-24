@@ -90,6 +90,20 @@ def select_joke() -> str:
 JOKE = select_joke()
 
 
+def _validate(text: str) -> str:
+    """Fail closed before writing: the entry must be a single
+    non-blank line of 1 to 200 characters, with no newline in it."""
+    if not isinstance(text, str):
+        raise TypeError("the entry must be a string")
+    if not 1 <= len(text) <= 200:
+        raise ValueError("the entry must be 1 to 200 characters long")
+    if not text.strip():
+        raise ValueError("the entry must contain a non-space character")
+    if "\n" in text or "\r" in text:
+        raise ValueError("the entry must be a single line")
+    return text
+
+
 def entry_path() -> str:
     """Return where the joke file goes.
 
@@ -102,8 +116,10 @@ def entry_path() -> str:
 
 def main() -> None:
     # Re-select at run time so the written file always comes from the
-    # same selection logic the module validated at import.
-    joke = select_joke()
+    # same selection logic the module validated at import, and
+    # validate it again right before writing so a bad entry can
+    # never reach the output file.
+    joke = _validate(select_joke())
     path = entry_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as handle:
